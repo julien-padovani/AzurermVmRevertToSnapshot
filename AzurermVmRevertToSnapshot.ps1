@@ -1,9 +1,9 @@
 ﻿<#
  .SYNOPSIS
-    Delete the VM and recreate the VM with an availability set
+    Delete the VM and recreate the VM from Snapshot
 
  .DESCRIPTION
-    Delete the VM and recreate the VM with an availability set
+    Delete the VM and recreate the VM from Snapshot
 
  .PARAMETER subscriptionId
     The subscription id where the template will be deployed.
@@ -12,7 +12,7 @@
         Get-AzureRmSubscription
 
  .PARAMETER resourceGroupName
-    The resource group where to deploye.
+    The resource group where to deploy.
 
  .PARAMETER resourceGroupLocation
     A resource group location.
