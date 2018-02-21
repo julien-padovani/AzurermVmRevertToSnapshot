@@ -104,7 +104,7 @@ $diskConfig = New-AzureRmDiskConfig -AccountType $OriginalVM.StorageProfile.OsDi
 $Disk = New-AzureRmDisk -Disk $diskConfig -ResourceGroupName $resourceGroupName -DiskName $OSDiskName
 
 #Initialize virtual machine configuration
-$VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize
+$VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize -AvailabilitySetId $OriginalVM.AvailabilitySetReference.Id -Tags $OriginalVM.Tags
 
 #Use the Managed Disk Resource Id to attach it to the virtual machine.
 $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -ManagedDiskId $disk.Id -CreateOption Attach -Windows
@@ -115,10 +115,16 @@ foreach ($nic in $OriginalVM.NetworkProfile.NetworkInterfaces) {
 }
 
 #Create the virtual machine with Managed Disk
-New-AzureRmVM -VM $VirtualMachine -ResourceGroupName $resourceGroupName -Location $OriginalVM.Location 
+New-AzureRmVM -VM $VirtualMachine -ResourceGroupName $resourceGroupName -Location $OriginalVM.Location
 
 #Delete old managed disk
 Remove-AzureRmDisk -ResourceGroupName $resourceGroupName -DiskName $OriginalVM.StorageProfile.OsDisk.name -Force
 
 write-host ("Old disk removed" + $OriginalVM.StorageProfile.OsDisk.name) -ForegroundColor Gray
 write-host "VM $VMName successfully restored from $SnapshotName" -ForegroundColor Green
+
+#Remove the AzureRM Profile file
+if(!$KeepAzureRMProfile){
+    write-host "deleting the AzureRMProfile file"
+    Remove-Item $credentialsPath
+}
