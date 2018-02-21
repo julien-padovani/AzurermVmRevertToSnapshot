@@ -63,7 +63,6 @@ $OSDiskName = ("$VMName-OSDisk-$RandomNumber")
 # Script body
 # Execution begins here
 #******************************************************************************
-$ErrorActionPreference = "Stop"
 import-module AzureRM
 
 # sign in
@@ -100,11 +99,29 @@ if (!$Snapshot)
 Remove-AzureRmVM -ResourceGroupName $ResourceGroupName -Name $vmName -Force
 
 #Create new managed disk from Snapshot
-$diskConfig = New-AzureRmDiskConfig -AccountType $OriginalVM.StorageProfile.OsDisk.ManagedDisk.StorageAccountType -Location $resourceGroupLocation -CreateOption Copy -SourceResourceId $snapshot.Id -DiskSizeGB $Snapshot.DiskSizeGB
+$diskConfig = New-AzureRmDiskConfig -SkuName $OriginalVM.StorageProfile.OsDisk.ManagedDisk.StorageAccountType -Location $resourceGroupLocation -CreateOption Copy -SourceResourceId $snapshot.Id -DiskSizeGB $Snapshot.DiskSizeGB
 $Disk = New-AzureRmDisk -Disk $diskConfig -ResourceGroupName $resourceGroupName -DiskName $OSDiskName
 
 #Initialize virtual machine configuration
-$VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize -AvailabilitySetId $OriginalVM.AvailabilitySetReference.Id -Tags $OriginalVM.Tags
+if($OriginalVM.AvailabilitySetReference.Id -and $OriginalVM.Tags)
+    {
+        $VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize -AvailabilitySetId $OriginalVM.AvailabilitySetReference.Id -Tags $OriginalVM.Tags
+    }
+else 
+    {
+        if($OriginalVM.AvailabilitySetReference.Id)
+            {
+                $VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize -AvailabilitySetId $OriginalVM.AvailabilitySetReference.Id
+            }
+        elseif($OriginalVM.Tags)
+            {
+                $VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize -Tags $OriginalVM.Tags
+            }
+        else
+            {
+                $VirtualMachine = New-AzureRmVMConfig -VMName $OriginalVM.Name -VMSize $OriginalVM.HardwareProfile.VmSize
+            }
+    }
 
 #Use the Managed Disk Resource Id to attach it to the virtual machine.
 $VirtualMachine = Set-AzureRmVMOSDisk -VM $VirtualMachine -ManagedDiskId $disk.Id -CreateOption Attach -Windows
